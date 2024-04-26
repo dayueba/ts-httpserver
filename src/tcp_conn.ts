@@ -2,6 +2,7 @@ import * as net from 'net';
 import { BodyReader, HTTPReq, HTTPRes } from './http_protocol';
 import { DynBuf } from './dynamic_buffer';
 import { HTTPError } from './errors';
+// import { logger } from './logger';
 
 export interface Reader {
   resolve: (value: Buffer) => void;
@@ -111,7 +112,7 @@ export class TCPConn {
     if (contentLen) {
       // bodyLen = parseDec(contentLen.toString('latin1'));
       bodyLen = Number.parseInt(contentLen.toString('latin1'));
-      // console.log('bodyLen: ', contentLen.toString(), bodyLen);
+      // logger.info('bodyLen: %s %d', contentLen.toString(), bodyLen);
       if (isNaN(bodyLen)) {
         throw new HTTPError(400, 'bad Content-Length.');
       }

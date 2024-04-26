@@ -1,4 +1,5 @@
 import { BodyReader, HTTPReq, HTTPRes, Headers } from './http_protocol';
+// import { logger } from './logger';
 
 export const handleReq = async (
   req: HTTPReq,
@@ -11,15 +12,9 @@ export const handleReq = async (
       resp = body;
       break;
     default:
-      resp = readerFromMemory(Buffer.from('hello world.\n'));
+      resp = readerFromMemory(Buffer.from('hello world.'));
       break;
   }
-  //
-  // return {
-  //   code: 200,
-  //   headers: new Headers([Buffer.from('Server: my_first_http_server')]),
-  //   body: resp,
-  // };
   return new HTTPRes(
     200,
     new Headers([Buffer.from('Server: my_first_http_server')]),
