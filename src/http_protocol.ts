@@ -62,6 +62,7 @@ export class HTTPRes {
   }
 }
 
+// an interface for reading/writing data from/to the HTTP body.
 export interface BodyReader {
   // the "Content-Length", -1 if unknown.
   length: number;
