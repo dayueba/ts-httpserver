@@ -10,6 +10,8 @@ import { DynBuf } from './dynamic_buffer';
 import { HTTPError } from './errors';
 // import { logger } from './logger';
 
+type BufferGenerator = AsyncGenerator<Buffer, void, void>;
+
 export interface Reader {
   resolve: (value: Buffer) => void;
   reject: (reason: Error) => void;
@@ -78,6 +80,7 @@ export class TCPConn {
       this.socket.resume();
     });
   }
+
   write(data: Buffer): Promise<void> {
     console.assert(data.length > 0);
     return new Promise((resolve, reject) => {
@@ -101,21 +104,37 @@ export class TCPConn {
 
   async writeHTTPResp(resp: HTTPRes) {
     if (resp.body.length < 0) {
-      throw new Error('TODO: chunked encoding');
+      resp.headers.push(Buffer.from('Transfer-Encoding: chunked'));
+    } else {
+      resp.headers.push(Buffer.from(`Content-Length: ${resp.body.length}`));
     }
-    // set the "Content-Length" field
-    console.assert(!resp.headers.get('Content-Length'));
-    resp.headers.push(Buffer.from(`Content-Length: ${resp.body.length}`));
     // write the header
     await this.write(resp.encodeHTTPResp());
     // write the body
-    while (true) {
-      const data = await resp.body.read();
-      if (data.length === 0) {
-        break;
+    const crlf = Buffer.from('\r\n');
+    for (let last = false; !last; ) {
+      let data = await resp.body.read();
+      last = data.length === 0; // ended?
+      if (resp.body.length < 0) {
+        // chunked encoding
+        data = Buffer.concat([
+          Buffer.from(data.length.toString(16)),
+          crlf,
+          data,
+          crlf,
+        ]);
       }
-      await this.write(data);
+      if (data.length) {
+        await this.write(data);
+      }
     }
+    // while (true) {
+    //   const data = await resp.body.read();
+    //   if (data.length === 0) {
+    //     break;
+    //   }
+    //   await this.write(data);
+    // }
   }
 
   readerFromReq(req: HTTPReq): BodyReader {
@@ -146,11 +165,49 @@ export class TCPConn {
       return this.readerFromContentLength(bodyLen);
     } else if (chunked) {
       // chunked encoding
-      throw new HTTPError(501, 'TODO');
+      // return readerFromGenerator(this.readChunks());
     } else {
       // read the rest of the connection
-      throw new HTTPError(501, 'TODO');
+      return this.readerFromConnEOF();
     }
+  }
+
+  async *readChunks(): BufferGenerator {
+    for (let last = false; !last; ) {
+      // read the chunk-size line
+      const idx = this.buffer.data
+        .subarray(0, this.buffer.length)
+        .indexOf('\r\n');
+      if (idx < 0) {
+        // need more data, omitted ...
+        continue;
+      }
+      // parse the chunk-size and remove the line
+      let remain = 0; //todo
+      this.buffer.pop(0); // todo
+      // is it the last one?
+      last = remain === 0;
+      // read and yield the chunk data
+      while (remain > 0) {
+        if (this.buffer.length === 0) {
+          // todo
+          // await bufExpectMore(conn, buf, 'chunk data');
+        }
+        const consume = Math.min(remain, this.buffer.length);
+        const data = Buffer.from(this.buffer.data.subarray(0, consume));
+        this.buffer.pop(consume);
+        remain -= consume;
+        yield data;
+      }
+      // the chunk data is followed by CRLF
+      // omitted ...
+      // todo
+      this.buffer.pop(2);
+    }
+  }
+
+  readerFromConnEOF() {
+    return null;
   }
 
   readerFromContentLength(remain: number): BodyReader {

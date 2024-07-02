@@ -23,6 +23,8 @@ net.Server.call(this, { allowHalfOpen: true })
 
 ### Pipelined Requests
 
+### Chunked Transfer Encoding
+
 
 ## ts
 ```typescript
@@ -30,24 +32,6 @@ export class Conn {
     reader: Reader | null; // 写法1
 
     reader2: Reader; // 写法2
-}
-```
-
-
-```typescript
-type TcpConn = {
-    reader: Reader;
-}
-
-function foo(conn: TcpConn) {
-}
-
-class TcpConn {
-    reader: Reader;
-    
-    foo() {
-        
-    }
 }
 ```
 
