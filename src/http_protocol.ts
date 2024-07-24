@@ -68,6 +68,8 @@ export interface BodyReader {
   length: number;
   // read data. returns an empty buffer after EOF.
   read(): Promise<Buffer>;
+  // optional cleanups
+  close?: () => Promise<void>;
 }
 
 export class HttpProtocol {

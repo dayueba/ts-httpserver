@@ -172,6 +172,14 @@ export class TCPConn {
     }
   }
 
+  readerFromGenerator(gen: AsyncGenerator<Buffer, void, void>) {
+    return {
+      close: async (): Promise<void> => {
+        // force it to `return` so that the `finally` block will execute await gen.return();
+      },
+    };
+  }
+
   async *readChunks(): BufferGenerator {
     for (let last = false; !last; ) {
       // read the chunk-size line

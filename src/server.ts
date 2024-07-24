@@ -55,7 +55,12 @@ export class Server {
       // logger.info(`get msg: %o`, msg);
       const reqBody = conn.readerFromReq(msg);
       const res: HTTPRes = await handleReq(msg, reqBody);
-      await conn.writeHTTPResp(res);
+      try {
+        await conn.writeHTTPResp(res);
+      } finally {
+        await res.body.close?.();
+      }
+
       // HTTP/1.0 协议的，收到一个消息后，就断开连接。
       if (msg.version === '1.0') {
         return;

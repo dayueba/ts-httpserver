@@ -64,3 +64,7 @@ export class Conn {
 this.server.on('connection', conn => this.newConn(conn));
 this.server.on('connection', this.newConn);
 ```
+
+## 高性能技巧
+1. 减少系统调用，读取时可以一次读取更多的数据，写入时可以合并写入
+2. 重用buffer
